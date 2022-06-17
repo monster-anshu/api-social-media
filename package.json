@@ -7,8 +7,6 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "commit": "git add . && git commit -m 'Commit' ",
-    "deploy": "yarn deploy && yarn github && yarn github ",
-    "glitch": "git push deploy master",
     "github": "git push origin master"
   },
   "dependencies": {
