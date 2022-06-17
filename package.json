@@ -1,0 +1,30 @@
+{
+  "name": "social-node",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "commit": "git add . && git commit -m 'Commit' ",
+    "deploy": "yarn deploy && yarn github && yarn github ",
+    "glitch": "git push deploy master",
+    "github": "git push origin master"
+  },
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "express-validator": "^6.14.1",
+    "helmet": "^5.1.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.3.8",
+    "morgan": "^1.10.0",
+    "nodemon": "^2.0.16"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
