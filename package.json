@@ -4,7 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node index.js",
+    "start": "pm2 start index.js",
+    "stop": "pm2 stop index.js",
     "dev": "nodemon index.js",
     "commit": "git add . && git commit -m 'Commit' ",
     "github": "git push origin master"
@@ -20,7 +21,8 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.3.8",
     "morgan": "^1.10.0",
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "pm2": "^5.2.0"
   },
   "engines": {
     "node": "16.x"
