@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const connectToMongo = require('./db');
 const { default: helmet } = require('helmet');
 const morgan = require('morgan');
+const http = require('http');
 
 dotenv.config();
 app.use(express.json());
@@ -24,3 +25,6 @@ app.listen(PORT, () => {
     console.log('Server is running on port : ' + PORT);
   });
 });
+setInterval(() => {
+  http.get(process.env.PROJECT_DOMAIN);
+}, 291000);
