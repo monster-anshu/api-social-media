@@ -77,10 +77,27 @@ router.get('/getUser', async (req, res) => {
           foreignField: '_id',
           pipeline: [
             {
+              $lookup: {
+                from: 'posts',
+                localField: '_id',
+                foreignField: 'userId',
+                as: 'userpost',
+              },
+            },
+            {
               $project: {
-                _id: 1,
+                userFollowers: { $size: '$followers' },
+                userFollowing: { $size: '$following' },
+                amIFollowing: { $in: [user['_id'], '$followers'] },
+                isHefollowing: { $in: [user['_id'], '$following'] },
+                userPosts: { $size: '$userpost' },
+                email: 1,
                 name: 1,
                 profilePicture: 1,
+                coverPicture: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                username: 1,
               },
             },
           ],
