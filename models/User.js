@@ -22,6 +22,14 @@ const UserSchema = new mongoose.Schema(
       max: 50,
       unique: true,
     },
+    socketId: {
+      type: String,
+      default: null,
+    },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
     password: {
       type: String,
       required: true,

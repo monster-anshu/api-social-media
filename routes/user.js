@@ -2,12 +2,57 @@ const router = require('express').Router();
 const authUser = require('../middleware/authUser');
 const User = require('../models/User');
 const Post = require('../models/Post');
+const { default: mongoose } = require('mongoose');
 router.use(authUser);
 
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   try {
-    const { password, ...other } = req.user;
-    res.json({ success: true, user: other['_doc'] });
+    const { user } = req;
+
+    const fuser = await User.aggregate([
+      { $match: { _id: mongoose.Types.ObjectId(user['_id']) } },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'userpost',
+        },
+      },
+      {
+        $project: {
+          userFollowers: { $size: '$followers' },
+          userFollowing: { $size: '$following' },
+          amIFollowing: { $in: [user['_id'], '$followers'] },
+          isHefollowing: { $in: [user['_id'], '$following'] },
+          userPosts: { $size: '$userpost' },
+          email: 1,
+          name: 1,
+          profilePicture: 1,
+          coverPicture: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          username: 1,
+        },
+      },
+    ]);
+
+    res.json({ success: true, user: fuser[0] });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: error.toString(), msg: 'Server down', success: false });
+  }
+});
+router.get('/name/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    if (!name) return res.send(null);
+    const result = await User.find({ name }).select(
+      'username _id name profilePicture',
+    );
+
+    return res.json(result);
   } catch (error) {
     res
       .status(500)
@@ -15,20 +60,94 @@ router.get('/me', (req, res) => {
   }
 });
 
+router.get('/getFollowers', async (req, res) => {
+  try {
+    const limit = 5;
+    const { id } = req.user;
+    const { page } = req.query;
+    const followers = await User.find({
+      following: {
+        $in: id,
+      },
+    })
+      .sort('name')
+      .select('id username name profilePicture')
+      .limit(limit)
+      .skip(limit * (page - 1));
+
+    res.send({ success: true, followers, size: followers.length });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: error.toString(), msg: 'Server down', success: false });
+  }
+});
+router.get('/getFollowing', async (req, res) => {
+  try {
+    const limit = 5;
+    const { id } = req.user;
+    const { page } = req.query;
+    const followers = await User.find({
+      followers: {
+        $in: id,
+      },
+    })
+      .sort('name')
+      .select('id username name profilePicture')
+      .skip(limit * (page - 1))
+      .limit(limit);
+
+    res.send({ success: true, followers, size: followers.length });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: error.toString(), msg: 'Server down', success: false });
+  }
+});
 router.get('/id/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { user } = req;
 
     try {
-      const gotUser = await User.findById(id).select('-password');
+      const gotUser = await User.aggregate([
+        { $match: { _id: mongoose.Types.ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'posts',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'userpost',
+          },
+        },
+        {
+          $project: {
+            userFollowers: { $size: '$followers' },
+            userFollowing: { $size: '$following' },
+            amIFollowing: { $in: [user['_id'], '$followers'] },
+            isHefollowing: { $in: [user['_id'], '$following'] },
+            userPosts: { $size: '$userpost' },
+            email: 1,
+            name: 1,
+            profilePicture: 1,
+            coverPicture: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            username: 1,
+          },
+        },
+      ]);
 
-      if (!gotUser)
+      if (!gotUser.length)
         return res.status(404).json({
           success: false,
           msg: 'User not found',
-          error: error.toString(),
         });
-      res.json({ success: true, user: gotUser });
+
+      res.json({
+        success: true,
+        user: gotUser[0],
+      });
     } catch (error) {
       res.status(400).json({
         success: false,
@@ -45,15 +164,46 @@ router.get('/id/:id', async (req, res) => {
 router.get('/username/:username', async (req, res) => {
   try {
     const { username } = req.params;
+    const { user } = req;
 
     try {
-      const gotUser = await User.findOne({ username }).select('-password');
-      if (!gotUser)
+      const gotUser = await User.aggregate([
+        { $match: { username } },
+        {
+          $lookup: {
+            from: 'posts',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'userpost',
+          },
+        },
+        {
+          $project: {
+            userFollowers: { $size: '$followers' },
+            userFollowing: { $size: '$following' },
+            amIFollowing: { $in: [user['_id'], '$followers'] },
+            isHefollowing: { $in: [user['_id'], '$following'] },
+            userPosts: { $size: '$userpost' },
+            email: 1,
+            name: 1,
+            profilePicture: 1,
+            coverPicture: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            username: 1,
+          },
+        },
+      ]);
+      if (!gotUser.length)
         return res.status(404).json({
           success: false,
           msg: 'User not found',
         });
-      res.json({ success: true, user: gotUser });
+
+      res.json({
+        success: true,
+        user: gotUser[0],
+      });
     } catch (error) {
       res.status(400).json({
         success: false,
@@ -67,7 +217,6 @@ router.get('/username/:username', async (req, res) => {
       .json({ error: error.toString(), msg: 'Server down', success: false });
   }
 });
-
 router.put('/:id', async (req, res) => {
   try {
     const { user } = req;

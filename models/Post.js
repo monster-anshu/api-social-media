@@ -26,6 +26,12 @@ const Post = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
       },
     ],
+    comments: [
+      {
+        user: mongoose.Schema.Types.ObjectId,
+        comment: String,
+      },
+    ],
   },
 
   {
