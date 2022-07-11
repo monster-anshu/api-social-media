@@ -60,50 +60,129 @@ router.get('/name/:name', async (req, res) => {
   }
 });
 
-router.get('/getFollowers', async (req, res) => {
+router.get('/getFollowers/:id', async (req, res) => {
   try {
-    const limit = 5;
-    const { id } = req.user;
-    const { page } = req.query;
-    const followers = await User.find({
-      following: {
-        $in: id,
-      },
-    })
-      .sort('name')
-      .select('id username name profilePicture')
-      .limit(limit)
-      .skip(limit * (page - 1));
+    const limit = 10;
+    const { user } = req;
+    const { id } = req.params;
+    let { page } = req.query;
+    if (!page) page = 1;
 
-    res.send({ success: true, followers, size: followers.length });
+    const followers = await User.aggregate([
+      {
+        $match: { _id: mongoose.Types.ObjectId(id) },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: 'following',
+          as: 'followers',
+          pipeline: [
+            {
+              $lookup: {
+                from: 'posts',
+                localField: '_id',
+                foreignField: 'userId',
+                as: 'userpost',
+              },
+            },
+            {
+              $project: {
+                userFollowers: { $size: '$followers' },
+                userFollowing: { $size: '$following' },
+                amIFollowing: { $in: [user['_id'], '$followers'] },
+                isHefollowing: { $in: [user['_id'], '$following'] },
+                userPosts: { $size: '$userpost' },
+                email: 1,
+                name: 1,
+                profilePicture: 1,
+                coverPicture: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                username: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          followers: {
+            $slice: ['$followers', (page - 1) * limit, limit],
+          },
+        },
+      },
+    ]);
+    res.json(followers[0] ? followers[0].followers : []);
   } catch (error) {
     res
       .status(500)
       .json({ error: error.toString(), msg: 'Server down', success: false });
   }
 });
-router.get('/getFollowing', async (req, res) => {
-  try {
-    const limit = 5;
-    const { id } = req.user;
-    const { page } = req.query;
-    const followers = await User.find({
-      followers: {
-        $in: id,
-      },
-    })
-      .sort('name')
-      .select('id username name profilePicture')
-      .skip(limit * (page - 1))
-      .limit(limit);
 
-    res.send({ success: true, followers, size: followers.length });
+router.get('/getFollowing/:id', async (req, res) => {
+  try {
+    const limit = 10;
+    const { user } = req;
+    const { id } = req.params;
+    let { page } = req.query;
+    if (!page) page = 1;
+    const following = await User.aggregate([
+      {
+        $match: { _id: mongoose.Types.ObjectId(id) },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: 'followers',
+          as: 'following',
+          pipeline: [
+            {
+              $lookup: {
+                from: 'posts',
+                localField: '_id',
+                foreignField: 'userId',
+                as: 'userpost',
+              },
+            },
+            {
+              $project: {
+                userFollowers: { $size: '$followers' },
+                userFollowing: { $size: '$following' },
+                amIFollowing: { $in: [user['_id'], '$followers'] },
+                isHefollowing: { $in: [user['_id'], '$following'] },
+                userPosts: { $size: '$userpost' },
+                email: 1,
+                name: 1,
+                profilePicture: 1,
+                coverPicture: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                username: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          following: {
+            $slice: ['$following', (page - 1) * limit, limit],
+          },
+        },
+      },
+    ]);
+    res.json(following[0] ? following[0].following : []);
   } catch (error) {
     res
       .status(500)
       .json({ error: error.toString(), msg: 'Server down', success: false });
   }
 });
+
 router.get('/id/:id', async (req, res) => {
   try {
     const { id } = req.params;
