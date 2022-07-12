@@ -4,7 +4,7 @@ const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-
+const { v4 } = require('uuid');
 dotenv.config();
 
 router.post(
@@ -24,13 +24,14 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
       const { username, password, name, email } = req.body;
-
+      const profilePicture = `https://avatars.dicebear.com/api/bottts/${username}.svg`;
       try {
         const user = await User.create({
           username,
           password,
           name,
           email,
+          profilePicture,
         });
 
         res.status(200).json({ username: user['username'], success: true });
