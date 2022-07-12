@@ -139,6 +139,7 @@ router.post(
         text: message.text,
         createdAt: message.createdAt,
       };
+      const reciver = await getSocketId(id);
       io.to(reciver.socketId).emit('reciveChat', newMessage);
       const personData = [mongoose.Types.ObjectId(id), user['_id']].sort();
       const result = await Chat.updateOne(
@@ -158,8 +159,7 @@ router.post(
           upsert: true,
         },
       );
-      const reciver = await getSocketId(id);
-    
+
       res.send('ok');
     } catch (error) {
       res
